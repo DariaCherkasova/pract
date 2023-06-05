@@ -7,7 +7,7 @@ def receive():
 	"""Receive message"""
 	while True:
 		try:
-			msg = client_socket.recv(1024).decode()
+			msg = client_socket.recv(1024).decode() #расшифровка
 			msg_list.insert(tkinter.END, msg)
 		except OSError:
 			break
@@ -29,7 +29,7 @@ top.title("Chatting room")
 
 messages_frame = tkinter.Frame(top)
 my_msg = tkinter.StringVar()
-my_msg.set("Type your message")
+my_msg.set("Сообщение")
 scrollbar = tkinter.Scrollbar(messages_frame)
 
 msg_list=tkinter.Listbox(messages_frame, height=40, width=100, yscrollcommand=scrollbar.set)

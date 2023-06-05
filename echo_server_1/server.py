@@ -6,11 +6,13 @@ logging.basicConfig(
     filemode='a',
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%d-%b-%y %H:%M:%S',
-    level=logging.DEBUG
+    level=logging.INFO,
+    encoding='utf-8'
+
 )
 
-logging.debug('-----------------------------------')
-logging.debug('Сервер запущен')
+logging.info('-----------------------------------')
+logging.info('Сервер запущен')
 
 sock = socket.socket()  # инициализация сокета
 sock.settimeout(60)
@@ -30,7 +32,7 @@ while True:
 # Проверка доступности порта. Перебор, в случае неудачи
 while True:
     try:
-        sock.bind(('', port))
+        sock.bind(('', port)) #привязка сервера к порту
     except socket.error:
         logging.warning('Порт %s занят, поиск другого', port)
         port += 1
@@ -38,17 +40,17 @@ while True:
             logging.warning('Достигнут предел диапозона портов')
             port = 1024
     else:
-        logging.debug('Назначен порт %s', port)
+        logging.info('Назначен порт %s', port)
         break
 
-logging.debug('Прослушивание порта')
+logging.info('Прослушивание порта')
 sock.listen(1)
 
 while True:
 
-    logging.debug('Ожидание подключения клиента')
+    logging.info('Ожидание подключения клиента')
     try:
-        conn, addr = sock.accept()
+        conn, addr = sock.accept() #принимает
     except socket.timeout:
         try:
             logging.warning('Сервер бездействует, остановка ..')
@@ -57,19 +59,19 @@ while True:
             pass
         break
 
-    logging.debug('Клиент подключен, информация о нём: %s', addr)
+    logging.info('Клиент подключен, информация о нём: %s', addr)
 
-    logging.debug('Обмен сообщениями с клиентом')
+    logging.info('Обмен сообщениями с клиентом')
     while True:
         data = conn.recv(1024)
         if not data or data.decode() == "exit":
-            logging.debug('Клиент завершил обмен')
+            logging.info('Клиент завершил обмен')
             break
-        logging.debug('Сообщение от %s: %s', addr, data.decode())
+        logging.info('Сообщение от %s: %s', addr, data.decode())
         conn.send(data)
 
     conn.close()
-    logging.debug('Клиент отключен')
+    logging.info('Клиент отключен')
 
 sock.close()
-logging.debug('Сервер остановлен')
+logging.info('Сервер остановлен')
