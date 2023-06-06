@@ -1,64 +1,54 @@
 import socket
-from wsgiref.handlers import format_date_time
-from datetime import datetime
-from time import mktime
-import os
-from threading import Thread
-import time
+import pickle
+from random import randint
 
-TYPEDICT = {"html" : "text/html; charset=UTF-8",
-        "jpg" : "image/jpeg",
-        "css" : "text/css",
-        "ico" : "image/x-icon"}
+def combinaton(message, key):
+    # шифрование сообщения
+    P2 = []
+    for i in range(len(message)):
+        P2 += chr(ord(message[i]) ^ key)
+    return ''.join(P2)
 
+def send_message(sock, message, key):
+    # отправляет сообщение через сокет
+    message = combinaton(message, key)
 
-def Dateget():
-    now = datetime.now()
-    stamp = mktime(now.timetuple())
-    return format_date_time(stamp)
+    # возвращает его сериализованное представление в виде байтовой строки
+    # отправляет зашифрованное сообщение через сокет, используя модуль 'pickle для сериализации сообщения в байтовую строку
+    sock.send(pickle.dumps(message))
 
-def checkType(name,nameType):
-    resp = ""
-    requestType = ""
-    try:
-        requestType = TYPEDICT[nameType]
-        resp += f"HTTP/1.1 200 OK\n"
-    except: 
-        requestType = nameType
-        resp += f"HTTP/1.1 403 Forbidden\n"
-    date = Dateget()
-    size = os.path.getsize(name)
-    resp += f"""Date: {date}
-    Server: MyServer
-    Content-type: {requestType}
-    Content-Length: {size}
-    Connection: close
+def receive(sock, key):
+    message = pickle.loads(sock.recv(1024))#получение
+    message = combinaton(message,key) #отправляет сообщение через сокет
+    return message
 
-     """ 
-    return resp
+HOST = '127.0.0.1'
+PORT = 8080
 
-def listenToClient(conn,addr):
-        data = conn.recv(8192)
-        msg = data.decode()
-        
-        name = msg.split()[1][1:]
-        if name == "" : name = "1.html"
-        resp = checkType(name,name.split('.')[-1])
-        with open(name, "r") as f:
-            resp += f.read()
-        conn.send(resp.encode())
-        print(Dateget())
-        conn.close()
-
-port = int(input("Порт:"))
 sock = socket.socket()
-try:
-    sock.bind(('', port))
-except OSError:
-    sock.bind(('', 8080))
-sock.listen(5)
-while True:
-    conn, addr = sock.accept()
-    print("Connected", addr)
-    Thread(target = listenToClient,args = (conn,addr)).start()
+sock.bind((HOST, PORT))
+sock.listen(1)
 
+#блокирует выполнение программы, пока не будет установлено новое соединение с клиентом, и возвращает новый сокет
+conn, addr = sock.accept()
+
+message = conn.recv(1024) #подключение
+
+p, g, A = pickle.loads(message) #получает и десериализует значение B, отправленное сервером через сокет, используя модуль pickle
+b = randint(0, 10000)
+B = g ** b % p
+
+conn.send(pickle.dumps(B))# для сериализации данных в байтовую строку
+
+key = A ** b % p
+
+
+while True:
+    try:
+        message = receive(conn, key)
+        print(message)
+        send_message(conn, 'Сообщение успешно получено и расшифровано', key)
+    except EOFError: 
+        break
+
+conn.close()
